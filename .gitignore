@@ -39,4 +39,5 @@ build/
 /logs/
 /.idea/
 /output.txt
-/.idea/
+/dependency-reduced-pom.xml
+/output-*.txt
