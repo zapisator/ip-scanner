@@ -1,0 +1,21 @@
+<html>
+<head>
+    <title>IP Scanner</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"> <!-- добавляем тег с кодировкой -->
+</head>
+<body>
+<h1>IP Scanner</h1>
+<p>Enter the range of IP addresses with mask and the number of threads to scan them.</p>
+<form id="scan-form">
+    <label for="range">Range:</label>
+    <input type="text" id="range" name="range" placeholder="51.38.24.0/24" required>
+    <label for="threads">Threads:</label>
+    <input type="number" id="threads" name="threads" min="1" max="8" value="1" required>
+    <button type="submit" id="scan-button">Сканировать</button>
+</form>
+<p id="scan-message"></p>
+<p id="scan-result"></p>
+<button id="new-button">Новый запрос</button>
+<script src="script.js" charset="UTF-8"></script> <!-- добавляем атрибут charset -->
+</body>
+</html>

@@ -1,0 +1,33 @@
+<configuration>
+
+    <property name="logFilePath" value="./logs"/>
+    <property name="logFileName" value="application"/>
+    <property name="datePattern" value="yyyy-MM-dd"/>
+    <property name="timePattern" value="HH:mm:ss"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{${datePattern} ${timePattern}} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logFilePath}/${logFileName}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${logFilePath}/${logFileName}-%d{${datePattern}}.log</fileNamePattern>
+            <maxHistory>365</maxHistory>
+            <totalSizeCap>20GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{${datePattern} ${timePattern}} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="org.apache.http" level="TRACE" />
+    <logger name="org.apache.http.wire" level="TRACE" />
+
+    <root level="TRACE">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </root>
+</configuration>

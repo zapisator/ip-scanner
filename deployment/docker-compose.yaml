@@ -1,0 +1,17 @@
+version: '3'
+services:
+
+  ip-scanner:
+    build:
+      context: ../
+      dockerfile: ./Dockerfile
+    container_name: "ip-scanner"
+    environment:
+      - JAVALIN_PORT=${JAVALIN_PORT}
+      - HOST_PORT=${HOST_PORT}
+      - JAR_FILE=${JAR_FILE}
+    ports:
+      - "${HOST_PORT}:${JAVALIN_PORT}"
+    volumes:
+      - ./documents:/var/lib/ip-scanner/data/
+
