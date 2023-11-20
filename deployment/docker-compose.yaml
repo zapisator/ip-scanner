@@ -3,6 +3,8 @@ services:
 
   ip-scanner:
     build:
+      args:
+        - JAR_FILE=${JAR_FILE}
       context: ../
       dockerfile: ./Dockerfile
     container_name: "ip-scanner"
