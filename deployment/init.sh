@@ -80,8 +80,10 @@ function build_jar_file () {
 }
 function build_new_jar_file () {
   log "build_new_jar_file" "Файла не было. Собираем jar-файл заново с ./mvnw package --quiet"
-  ./mvnw package --quiet || { log "build_new_jar_file" "Сборка неуспешна" >&2; exit 1; }
+  local result
+  result=$(./mvnw package --quiet) || { log "build_new_jar_file" "Сборка неуспешна" >&2; exit 1; }
   log "build_new_jar_file" "Сборка успешна"
+  printf '%s\n' "$result"
 }
 
 function remove_jar_file() {
