@@ -116,7 +116,6 @@ function run_container () {
 }
 
 function rebuild_and_run_containers () {
-  # Установить обработчик ошибок
   log "rebuild_and_run_containers" "Установливаем обработчик ошибок"
   trap 'log "rebuild_and_run_containers" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
   log "rebuild_and_run_containers" "Получаем имя файла с переменными окружения"
