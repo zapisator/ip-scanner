@@ -128,15 +128,15 @@ function rebuild_and_run_containers () {
 }
 
 function is_image_up_to_date () {
-  # Установить обработчик ошибок
+  log "is_image_up_to_date" "Установливаем обработчик ошибок"
   trap 'log "is_image_up_to_date" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
-  # Получить дату образа
+  log "is_image_up_to_date" "Получаем дату образа"
   local image_date="$(date -d "$(docker image inspect $IMAGE_NAME | grep LastTagTime | awk -F ' ' '{gsub(/"/,"",$2); print $2}')" +%FT%T)"
   log "is_image_up_to_date" "Дата образа   : '$image_date'"
-  # Получить дату jar-файла
+  log "is_image_up_to_date" "Получаем дату jar-файла"
   local jar_date="$(date -d "$(stat -c %y $PROJECT_FOLDER/target/$JAR_FILE)" +%FT%T)"
   log "is_image_up_to_date" "Дата jar файла: '$jar_date'"
-  # Сравнить даты
+  log "is_image_up_to_date" "Сравниваем даты"
   if [[ "$image_date" < "$jar_date" ]]; then
     log "is_image_up_to_date" "Образ '$IMAGE_NAME' устарел"
     return 1
