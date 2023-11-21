@@ -1,25 +1,19 @@
 #!/usr/bin/env bash
-
 # Установить опции для выхода при ошибке, необъявленной переменной или ошибке в конвейере
 set -euo pipefail
-
 # Установить переменные для имени скрипта
 SCRIPT_NAME="$0"
-
 # Определить функцию для вывода отладочной информации
-function log () {
-  # Получить имя функции, из которой вызывается лог
-  local function_name="$1"
-  # Получить сообщение, которое нужно вывести
-  local message="$2"
-  # Вывести сообщение с датой, временем и именем функции
-  printf "%s: [%s # %s] %s\n" "$(date +"%Y-%m-%dT%H:%M:%S.%3N")" "$SCRIPT_NAME" "$function_name" "$message"
-}
-
+  function log () {
+    # Получить имя функции, из которой вызывается лог
+    local function_name="$1"
+    # Получить сообщение, которое нужно вывести
+    local message="$2"
+    # Вывести сообщение с датой, временем и именем функции
+    printf "%s: [%s # %s] %s\n" "$(date +"%Y-%m-%dT%H:%M:%S.%3N")" "$SCRIPT_NAME" "$function_name" "$message" >&2
+  }
 # Функция, которая получает абсолютный путь к скрипту и устанавливает его в переменную окружения
-function set_script_path () {
-  local result_var=$1
-  log "get_script_path" "Имя переменной, которую нужно установить: "$result_var
+function get_script_path () {
   log "get_script_path" "Получаем относительный путь к скрипту"
   local script_path="$(dirname -- "$SCRIPT_NAME")"
   log "get_script_path" "Относительный путь к скрипту:"$script_path
@@ -28,55 +22,51 @@ function set_script_path () {
     log "get_script_path" "Абсолютный путь к скрипту: "$script_path
     log "get_script_path" "Проверяем, что путь доступен"
   if [[ -z "$script_path" ]] ; then
-    log "get_script_path" "Ошибка: не удалось получить путь к скрипту" >&2
+    log "get_script_path" "Ошибка: не удалось получить путь к скрипту"
     exit 1
   fi
-  log "get_script_path" "Устанавливаем значение переменной окружения с помощью eval" >&2
-  eval $result_var=\"'$script_path'\"
+  log "get_script_path" "Путь доступен. Возращаем значение пути: $script_path"
+  echo $script_path
 }
 # Функция, которая получает значение JAR_FILE из docker-compose.yml и устанавливает его в переменную окружения
-set_jar_file () {
-  local result_var=$1 # Имя переменной окружения, которую нужно установить
-  log "set_jar_file" "Имя переменной, которую нужно установить: "$result_var
-  log "set_jar_file" "Получаем от docker compose значение переменной окружения JAR_FILE"
-  local jar_file=$(docker compose --env-file "$ENV_FILE" config | grep JAR_FILE | awk -F ': ' '{print $2}') # Получаем значение JAR_FILE из docker-compose.yml
-  log "set_jar_file" "Значение JAR_FILE: "$jar_file
-  log "set_jar_file" "Проверяем, что значение не пустое"
-  if [ -z "$jar_file" ]; then
+get_jar_file () {
+  log "get_jar_file" "Получаем от docker compose значение переменной окружения JAR_FILE"
+  local jar_file=$(docker compose --env-file "$ENV_FILE" config | grep -m 1 JAR_FILE | awk -F ': ' '{print $2}')
+  log "get_jar_file" "Значение JAR_FILE: "$jar_file
+  log "get_jar_file" "Проверяем, что значение не пустое: "$jar_file
+  if [[ -z "$jar_file" ]]; then
     log "get_jar_file" "Не удалось найти переменную JAR_FILE в файле docker-compose.yml"
     exit 1
   fi
-  log "get_jar_file" "Устанавливаем значение переменной окружения с помощью eval"
-  eval $result_var=\"'$jar_file'\"
+  log "get_jar_file" "JAR_FILE существует. Возращаем его значение: "$jar_file
+  echo $jar_file
 }
-
 # Получить путь к скрипту и становить переменные для папок проекта и развертывания и для названий файлов и папок
-SCRIPT_PATH=""
-set_script_path SCRIPT_PATH
+SCRIPT_PATH=$(get_script_path)
 PROJECT_FOLDER="$(dirname "$SCRIPT_PATH")"
 DEPLOYMENT_FOLDER="deployment"
 IMAGE_NAME="deployment-ip-scanner"
-JAR_FILE=""
+ENV_FILE="$PROJECT_FOLDER/$DEPLOYMENT_FOLDER/.env"
+JAR_FILE=$(get_jar_file)
 DOCKER_FILE="docker-compose.yaml"
-ENV_FILE=$PROJECT_FOLDER"/"$DEPLOYMENT_FOLDER"/.env"
 # Вывести значения переменных
-log "init.sh" "SCRIPT_NAME=$SCRIPT_NAME"
-log "init.sh" "SCRIPT_PATH=$SCRIPT_PATH"
-log "init.sh" "PROJECT_FOLDER=$PROJECT_FOLDER"
-log "init.sh" "DEPLOYMENT_FOLDER=$DEPLOYMENT_FOLDER"
-set_jar_file JAR_FILE
-log "init.sh" "JAR_FILE=$JAR_FILE"
-log "init.sh" "DOCKER_FILE=$DOCKER_FILE"
-log "init.sh" "ENV_FILE=$ENV_FILE"
+log "init.sh" "SCRIPT_NAME="$SCRIPT_NAME
+log "init.sh" "SCRIPT_PATH="$SCRIPT_PATH
+log "init.sh" "PROJECT_FOLDER="$PROJECT_FOLDER
+log "init.sh" "DEPLOYMENT_FOLDER="$DEPLOYMENT_FOLDER
+log "init.sh" "JAR_FILE="$JAR_FILE
+log "init.sh" "DOCKER_FILE="$DOCKER_FILE
+log "init.sh" "ENV_FILE="$ENV_FILE
 # Определить функцию для сборки jar-файла, если он отсутствует или устарел
 function build_jar_file () {
   log "build_jar_file" "Переходим в папку проекта '$PROJECT_FOLDER'"
   cd "$PROJECT_FOLDER"
-  log "build_jar_file" "Начинаем сборку jar-файла 'target/$JAR_FILE'. Проверяем есть ли этот файл"
+  log "build_jar_file" "Начинаем сборку jar-файла 'target/"$JAR_FILE". Проверяем есть ли этот файл"
   if [[ -f target/$JAR_FILE ]]; then
-      log "build_jar_file" "jar-файла существует, проверяем были ли его изменения"
-      if_old_rebuild_jar_file
+    log "build_jar_file" "jar-файл существует, проверяем были ли его изменения"
+    if_old_rebuild_jar_file
   else
+    log "build_jar_file" "jar-файла не существует. Нужно построить новый."
     build_new_jar_file
   fi
   log "build_jar_file" "Закончили сборку jar-файла"
@@ -107,7 +97,7 @@ function rebuild_and_run_containers () {
   log "rebuild_and_run_containers" "Собираем образ"
   docker compose --env-file "$ENV_FILE" build
   log "rebuild_and_run_containers" "Запускаем контейнер"
-  docker compose --env-file "$ENV_FILE" up --force-recreate --no-deps
+  docker compose --env-file "$ENV_FILE" up --force-recreate --no-deps -d
 }
 
 function is_image_fresh () {
@@ -129,7 +119,7 @@ function if_old_rebuild_container () {
   log "if_old_rebuild_container" "Проверяем, является ли образ свежим"
   if is_image_fresh; then
     log "if_old_rebuild_container" "Образ свежий. Запускаем контейнер"
-    docker compose --env-file "$ENV_FILE" up
+    docker compose --env-file "$ENV_FILE" up -d
   else
     log "if_old_rebuild_container" "Образ устарел. Пересобираем и запускаем контейнер"
     rebuild_and_run_containers
