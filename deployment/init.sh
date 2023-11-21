@@ -59,19 +59,25 @@ log "init.sh" "DOCKER_FILE="$DOCKER_FILE
 log "init.sh" "ENV_FILE="$ENV_FILE
 # Определить функцию для сборки jar-файла, если он отсутствует или устарел
 function build_jar_file () {
-  log "build_jar_file" "Переходим в папку проекта '$PROJECT_FOLDER'"
-  cd "$PROJECT_FOLDER"
-  log "build_jar_file" "Начинаем сборку jar-файла 'target/"$JAR_FILE". Проверяем есть ли этот файл"
-  if [[ -f target/$JAR_FILE ]]; then
+  # Установить обработчик ошибок
+  trap 'log "build_jar_file" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
+  # Получить путь к папке проекта
+  local project_folder="$PROJECT_FOLDER"
+  log "build_jar_file" "Переходим в папку проекта '${project_folder}'"
+  # Сохранить текущую папку в стеке и перейти в папку проекта
+  pushd "${project_folder}"
+  log "build_jar_file" "Начинаем сборку jar-файла 'target/${JAR_FILE}'. Проверяем есть ли этот файл"
+  if [[ -f target/${JAR_FILE} ]]; then
     log "build_jar_file" "jar-файл существует, проверяем были ли его изменения"
-    if_old_rebuild_jar_file
+    rebuild_jar_file_if_needed
   else
     log "build_jar_file" "jar-файла не существует. Нужно построить новый."
     build_new_jar_file
   fi
   log "build_jar_file" "Закончили сборку jar-файла"
+  # Вернуться в предыдущую папку из стека
+  popd
 }
-
 function build_new_jar_file () {
   log "build_new_jar_file" "Файла не было. Собираем jar-файл заново с ./mvnw package --quiet"
   ./mvnw package --quiet || { log "build_new_jar_file" "Сборка неуспешна" >&2; exit 1; }
@@ -140,7 +146,7 @@ function build_and_run_containers () {
   log "build_and_run_containers" "Закончили сборку и запуск контейнеров"
 }
 
-#build_jar_file
+build_jar_file
 #build_and_run_containers
 
 # Добавить комментарии к скрипту
