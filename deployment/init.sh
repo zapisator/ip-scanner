@@ -127,17 +127,21 @@ function rebuild_and_run_containers () {
   run_container --force-recreate --no-deps
 }
 
-function is_image_fresh () {
-  log "is_image_fresh" "Проверяем, является ли образ свежим: '$IMAGE_NAME'"
+function is_image_up_to_date () {
+  # Установить обработчик ошибок
+  trap 'log "is_image_up_to_date" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
+  # Получить дату образа
   local image_date="$(date -d "$(docker image inspect $IMAGE_NAME | grep LastTagTime | awk -F ' ' '{gsub(/"/,"",$2); print $2}')" +%FT%T)"
-  log "is_image_fresh" "Дата образа   : '$image_date'"
+  log "is_image_up_to_date" "Дата образа   : '$image_date'"
+  # Получить дату jar-файла
   local jar_date="$(date -d "$(stat -c %y $PROJECT_FOLDER/target/$JAR_FILE)" +%FT%T)"
-  log "is_image_fresh" "Дата jar файла: '$jar_date'"
+  log "is_image_up_to_date" "Дата jar файла: '$jar_date'"
+  # Сравнить даты
   if [[ "$image_date" < "$jar_date" ]]; then
-    log "is_image_fresh" "Образ '$IMAGE_NAME' устарел"
+    log "is_image_up_to_date" "Образ '$IMAGE_NAME' устарел"
     return 1
   else
-    log "is_image_fresh" "Образ свежий"
+    log "is_image_up_to_date" "Образ свежий"
     return 0
   fi
 }
