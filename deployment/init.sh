@@ -36,10 +36,10 @@ get_jar_file () {
   log "get_jar_file" "Проверяем, что значение не пустое: "$jar_file
   if [[ -z "$jar_file" ]]; then
     log "get_jar_file" "Не удалось найти переменную JAR_FILE в файле docker-compose.yml"
-    exit 1
+    return 1
   fi
   log "get_jar_file" "JAR_FILE существует. Возращаем его значение: "$jar_file
-  echo $jar_file
+  printf '%s\n' "$jar_file"
 }
 # Получить путь к скрипту и становить переменные для папок проекта и развертывания и для названий файлов и папок
 SCRIPT_PATH=$(get_script_path)
