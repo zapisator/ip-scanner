@@ -145,6 +145,15 @@ function is_image_up_to_date () {
   fi
 }
 
+function run_container () {
+  log "run_container" "Установливаем обработчик ошибок"
+  trap 'log "run_container" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
+  # Получить опцию для запуска контейнера
+  local option="$1"
+  log "run_container" "Запускаем контейнер с опцией $option"
+  docker compose --env-file "$ENV_FILE" up "$option" -d
+}
+
 function if_old_rebuild_container () {
   log "if_old_rebuild_container" "Проверяем, является ли образ свежим"
   if is_image_fresh; then
@@ -155,6 +164,8 @@ function if_old_rebuild_container () {
     rebuild_and_run_containers
   fi
 }
+
+
 
 function build_and_run_containers () {
   log "build_and_run_containers" "Переходим в папку развертывания: '$DEPLOYMENT_FOLDER'"
