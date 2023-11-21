@@ -109,6 +109,12 @@ function rebuild_jar_file_if_needed () {
   fi
 }
 
+function run_container () {
+  local option="$1"
+  log "run_container" "Запускаем контейнер с опцией ${option}"
+  docker compose --env-file "${ENV_FILE}" up ${option} -d
+}
+
 function rebuild_and_run_containers () {
   log "rebuild_and_run_containers" "Собираем образ"
   docker compose --env-file "$ENV_FILE" build
