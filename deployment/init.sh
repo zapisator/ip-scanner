@@ -15,18 +15,18 @@ function log () {
 # Функция, которая получает абсолютный путь к скрипту и устанавливает его в переменную окружения
 function get_script_path () {
   log "get_script_path" "Получаем относительный путь к скрипту"
-  local script_path="$(dirname -- "$SCRIPT_NAME")"
-  log "get_script_path" "Относительный путь к скрипту:"$script_path
+  local script_path="$(dirname -- "${SCRIPT_NAME}")"
+  log "get_script_path" "Относительный путь к скрипту: ${script_path}"
   log "get_script_path" "Преобразовать его в абсолютный путь"
-  script_path="$(cd -- "$script_path" && pwd)"
-    log "get_script_path" "Абсолютный путь к скрипту: "$script_path
-    log "get_script_path" "Проверяем, что путь доступен"
-  if [[ -z "$script_path" ]] ; then
+  script_path="$(cd -- "${script_path}" && pwd)"
+  log "get_script_path" "Абсолютный путь к скрипту: ${script_path}"
+  log "get_script_path" "Проверяем, что путь доступен"
+  if [[ -z "${script_path}" ]] ; then
     log "get_script_path" "Ошибка: не удалось получить путь к скрипту"
-    exit 1
+    return 1
   fi
-  log "get_script_path" "Путь доступен. Возращаем значение пути: $script_path"
-  echo $script_path
+  log "get_script_path" "Путь доступен. Возращаем значение пути: ${script_path}"
+  printf '%s\n' "${script_path}"
 }
 # Функция, которая получает значение JAR_FILE из docker-compose.yml и устанавливает его в переменную окружения
 get_jar_file () {
