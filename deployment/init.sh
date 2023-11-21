@@ -95,14 +95,17 @@ function remove_jar_file() {
   rm target/"$jar_file"
 }
 
-
-function if_old_rebuild_jar_file () {
-  if find src -newer target/$JAR_FILE | grep -q .; then
-    log "if_old_rebuild_jar_file" "Он 'target/$JAR_FILE' существует и были изменения исходного кода. Удаляем старый jar-файл"
+function rebuild_jar_file_if_needed () {
+  # Установить обработчик ошибок
+  trap 'log "rebuild_jar_file_if_needed" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
+  # Получить название jar-файла
+  local jar_file="$JAR_FILE"
+  if find src -newer target/"$jar_file" | grep -q .; then
+    log "rebuild_jar_file_if_needed" "Он 'target/$jar_file' существует и были изменения исходного кода. Удаляем старый jar-файл"
     remove_jar_file
     build_new_jar_file
   else
-    log "if_old_rebuild_jar_file" "Jar-файл не изменился"
+    log "rebuild_jar_file_if_needed" "Jar-файл не изменился"
   fi
 }
 
