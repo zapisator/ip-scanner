@@ -4,14 +4,14 @@ set -euo pipefail
 # Установить переменные для имени скрипта
 SCRIPT_NAME="$0"
 # Определить функцию для вывода отладочной информации
-  function log () {
-    # Получить имя функции, из которой вызывается лог
-    local function_name="$1"
-    # Получить сообщение, которое нужно вывести
-    local message="$2"
-    # Вывести сообщение с датой, временем и именем функции
-    printf "%s: [%s # %s] %s\n" "$(date +"%Y-%m-%dT%H:%M:%S.%3N")" "$SCRIPT_NAME" "$function_name" "$message" >&2
-  }
+function log () {
+  # Получить имя функции, из которой вызывается лог
+  local -r function_name="$1"
+  # Получить сообщение, которое нужно вывести
+  local -r message="$2"
+  # Вывести сообщение с датой, временем и именем функции
+  printf "%s: [%s # %s] %s\n" "$(date +"%Y-%m-%dT%H:%M:%S.%3N")" "$SCRIPT_NAME" "$function_name" "$message" >&2
+}
 # Функция, которая получает абсолютный путь к скрипту и устанавливает его в переменную окружения
 function get_script_path () {
   log "get_script_path" "Получаем относительный путь к скрипту"
@@ -140,8 +140,8 @@ function build_and_run_containers () {
   log "build_and_run_containers" "Закончили сборку и запуск контейнеров"
 }
 
-build_jar_file
-build_and_run_containers
+#build_jar_file
+#build_and_run_containers
 
 # Добавить комментарии к скрипту
 # Этот скрипт предназначен для автоматизации сборки и запуска проекта ip-scanner
