@@ -87,9 +87,14 @@ function build_new_jar_file () {
 }
 
 function remove_jar_file() {
-    log "remove_jar_file" "Удаляем старый jar-файл"
-    rm target/$JAR_FILE
+  # Установить обработчик ошибок
+  trap 'log "remove_jar_file" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
+  # Получить название jar-файла
+  local jar_file="$JAR_FILE"
+  log "remove_jar_file" "Удаляем старый jar-файл"
+  rm target/"$jar_file"
 }
+
 
 function if_old_rebuild_jar_file () {
   if find src -newer target/$JAR_FILE | grep -q .; then
