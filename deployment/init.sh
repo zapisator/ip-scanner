@@ -96,9 +96,9 @@ function remove_jar_file() {
 }
 
 function rebuild_jar_file_if_needed () {
-  # Установить обработчик ошибок
+  log "rebuild_jar_file_if_needed" "Установливаем обработчик ошибок"
   trap 'log "rebuild_jar_file_if_needed" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
-  # Получить название jar-файла
+  log "rebuild_jar_file_if_needed" "Получаем название jar-файла"
   local jar_file="$JAR_FILE"
   if find src -newer target/"$jar_file" | grep -q .; then
     log "rebuild_jar_file_if_needed" "Он 'target/$jar_file' существует и были изменения исходного кода. Удаляем старый jar-файл"
