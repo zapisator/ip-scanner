@@ -116,10 +116,15 @@ function run_container () {
 }
 
 function rebuild_and_run_containers () {
+  # Установить обработчик ошибок
+  log "rebuild_and_run_containers" "Установливаем обработчик ошибок"
+  trap 'log "rebuild_and_run_containers" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
+  log "rebuild_and_run_containers" "Получаем имя файла с переменными окружения"
+  local env_file="$ENV_FILE"
   log "rebuild_and_run_containers" "Собираем образ"
-  docker compose --env-file "$ENV_FILE" build
+  docker compose --env-file "$env_file" build
   log "rebuild_and_run_containers" "Запускаем контейнер"
-  docker compose --env-file "$ENV_FILE" up --force-recreate --no-deps -d
+  run_container --force-recreate --no-deps
 }
 
 function is_image_fresh () {
