@@ -14,31 +14,31 @@ function log () {
 }
 # Функция, которая получает абсолютный путь к скрипту и устанавливает его в переменную окружения
 function get_script_path () {
-  log "get_script_path" "Получаем относительный путь к скрипту"
+  log $FUNCNAME "Получаем относительный путь к скрипту"
   local script_path="$(dirname -- "${SCRIPT_NAME}")"
-  log "get_script_path" "Относительный путь к скрипту: ${script_path}"
-  log "get_script_path" "Преобразовать его в абсолютный путь"
+  log $FUNCNAME "Относительный путь к скрипту: ${script_path}"
+  log $FUNCNAME "Преобразовать его в абсолютный путь"
   script_path="$(cd -- "${script_path}" && pwd)"
-  log "get_script_path" "Абсолютный путь к скрипту: ${script_path}"
-  log "get_script_path" "Проверяем, что путь доступен"
+  log $FUNCNAME "Абсолютный путь к скрипту: ${script_path}"
+  log $FUNCNAME "Проверяем, что путь доступен"
   if [[ -z "${script_path}" ]] ; then
-    log "get_script_path" "Ошибка: не удалось получить путь к скрипту"
+    log $FUNCNAME "Ошибка: не удалось получить путь к скрипту"
     return 1
   fi
-  log "get_script_path" "Путь доступен. Возращаем значение пути: ${script_path}"
+  log $FUNCNAME "Путь доступен. Возращаем значение пути: ${script_path}"
   printf '%s\n' "${script_path}"
 }
 # Функция, которая получает значение JAR_FILE из docker-compose.yml и устанавливает его в переменную окружения
 get_jar_file () {
-  log "get_jar_file" "Получаем от docker compose значение переменной окружения JAR_FILE"
+  log $FUNCNAME "Получаем от docker compose значение переменной окружения JAR_FILE"
   local jar_file=$(docker compose --env-file "$ENV_FILE" config | grep -m 1 JAR_FILE | awk -F ': ' '{print $2}')
-  log "get_jar_file" "Значение JAR_FILE: "$jar_file
-  log "get_jar_file" "Проверяем, что значение не пустое: "$jar_file
+  log $FUNCNAME "Значение JAR_FILE: "$jar_file
+  log $FUNCNAME "Проверяем, что значение не пустое: "$jar_file
   if [[ -z "$jar_file" ]]; then
-    log "get_jar_file" "Не удалось найти переменную JAR_FILE в файле docker-compose.yml"
+    log $FUNCNAME "Не удалось найти переменную JAR_FILE в файле docker-compose.yml"
     return 1
   fi
-  log "get_jar_file" "JAR_FILE существует. Возращаем его значение: "$jar_file
+  log $FUNCNAME "JAR_FILE существует. Возращаем его значение: "$jar_file
   printf '%s\n' "$jar_file"
 }
 # Получить путь к скрипту и становить переменные для папок проекта и развертывания и для названий файлов и папок
@@ -50,135 +50,146 @@ ENV_FILE="$PROJECT_FOLDER/$DEPLOYMENT_FOLDER/.env"
 JAR_FILE=$(get_jar_file)
 DOCKER_FILE="docker-compose.yaml"
 # Вывести значения переменных
-log "init.sh" "SCRIPT_NAME="$SCRIPT_NAME
-log "init.sh" "SCRIPT_PATH="$SCRIPT_PATH
-log "init.sh" "PROJECT_FOLDER="$PROJECT_FOLDER
-log "init.sh" "DEPLOYMENT_FOLDER="$DEPLOYMENT_FOLDER
-log "init.sh" "JAR_FILE="$JAR_FILE
-log "init.sh" "DOCKER_FILE="$DOCKER_FILE
-log "init.sh" "ENV_FILE="$ENV_FILE
+log "" "SCRIPT_NAME="$SCRIPT_NAME
+log "" "SCRIPT_PATH="$SCRIPT_PATH
+log "" "PROJECT_FOLDER="$PROJECT_FOLDER
+log "" "DEPLOYMENT_FOLDER="$DEPLOYMENT_FOLDER
+log "" "JAR_FILE="$JAR_FILE
+log "" "DOCKER_FILE="$DOCKER_FILE
+log "" "ENV_FILE="$ENV_FILE
 # Определить функцию для сборки jar-файла, если он отсутствует или устарел
 function build_jar_file () {
-  # Установить обработчик ошибок
+  log $FUNCNAME "Установливаем обработчик ошибок"
   trap 'log "build_jar_file" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
-  # Получить путь к папке проекта
+  log $FUNCNAME "Получаем путь к папке проекта"
   local project_folder="$PROJECT_FOLDER"
-  log "build_jar_file" "Переходим в папку проекта '${project_folder}'"
+  log $FUNCNAME "Переходим в папку проекта '${project_folder}'"
   # Сохранить текущую папку в стеке и перейти в папку проекта
   pushd "${project_folder}"
-  log "build_jar_file" "Начинаем сборку jar-файла 'target/${JAR_FILE}'. Проверяем есть ли этот файл"
+  log $FUNCNAME "Начинаем сборку jar-файла 'target/${JAR_FILE}'. Проверяем есть ли этот файл"
   if [[ -f target/${JAR_FILE} ]]; then
-    log "build_jar_file" "jar-файл существует, проверяем были ли его изменения"
+    log $FUNCNAME "jar-файл существует, проверяем были ли его изменения"
     rebuild_jar_file_if_needed
   else
-    log "build_jar_file" "jar-файла не существует. Нужно построить новый."
+    log $FUNCNAME "jar-файла не существует. Нужно построить новый."
     build_new_jar_file
   fi
-  log "build_jar_file" "Закончили сборку jar-файла"
+  log $FUNCNAME "Закончили сборку jar-файла"
   # Вернуться в предыдущую папку из стека
   popd
 }
 function build_new_jar_file () {
-  log "build_new_jar_file" "Файла не было. Собираем jar-файл заново с ./mvnw package --quiet"
+  log $FUNCNAME "Файла не было. Собираем jar-файл заново с ./mvnw package --quiet"
   local result
-  result=$(./mvnw package --quiet) || { log "build_new_jar_file" "Сборка неуспешна" >&2; exit 1; }
-  log "build_new_jar_file" "Сборка успешна"
+  result=$(./mvnw package --quiet) || { log $FUNCNAME "Сборка неуспешна" >&2; exit 1; }
+  log $FUNCNAME "Сборка успешна"
   printf '%s\n' "$result"
 }
 
 function remove_jar_file() {
-  # Установить обработчик ошибок
+  log $FUNCNAME "Установливаем обработчик ошибок"
   trap 'log "remove_jar_file" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
-  # Получить название jar-файла
+  log $FUNCNAME "Получаем название jar-файла"
   local jar_file="$JAR_FILE"
-  log "remove_jar_file" "Удаляем старый jar-файл"
+  log $FUNCNAME "Удаляем старый jar-файл"
   rm target/"$jar_file"
 }
 
 function rebuild_jar_file_if_needed () {
-  log "rebuild_jar_file_if_needed" "Установливаем обработчик ошибок"
+  log $FUNCNAME "Установливаем обработчик ошибок"
   trap 'log "rebuild_jar_file_if_needed" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
-  log "rebuild_jar_file_if_needed" "Получаем название jar-файла"
+  log $FUNCNAME "Получаем название jar-файла"
   local jar_file="$JAR_FILE"
   if find src -newer target/"$jar_file" | grep -q .; then
-    log "rebuild_jar_file_if_needed" "Он 'target/$jar_file' существует и были изменения исходного кода. Удаляем старый jar-файл"
+    log $FUNCNAME "Он 'target/$jar_file' существует и были изменения исходного кода. Удаляем старый jar-файл"
     remove_jar_file
     build_new_jar_file
   else
-    log "rebuild_jar_file_if_needed" "Jar-файл не изменился"
+    log $FUNCNAME "Jar-файл не изменился"
   fi
 }
 
 function run_container () {
   local option="$1"
-  log "run_container" "Запускаем контейнер с опцией ${option}"
+  log $FUNCNAME "Запускаем контейнер с опцией ${option}"
   docker compose --env-file "${ENV_FILE}" up ${option} -d
 }
 
 function rebuild_and_run_containers () {
-  log "rebuild_and_run_containers" "Установливаем обработчик ошибок"
+  log $FUNCNAME "Установливаем обработчик ошибок"
   trap 'log "rebuild_and_run_containers" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
-  log "rebuild_and_run_containers" "Получаем имя файла с переменными окружения"
+  log $FUNCNAME "Получаем имя файла с переменными окружения"
   local env_file="$ENV_FILE"
-  log "rebuild_and_run_containers" "Собираем образ"
+  log $FUNCNAME "Собираем образ"
   docker compose --env-file "$env_file" build
-  log "rebuild_and_run_containers" "Запускаем контейнер"
+  log $FUNCNAME "Запускаем контейнер"
   run_container --force-recreate --no-deps
 }
 
 function is_image_up_to_date () {
-  log "is_image_up_to_date" "Установливаем обработчик ошибок"
+  log $FUNCNAME "Установливаем обработчик ошибок"
   trap 'log "is_image_up_to_date" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
-  log "is_image_up_to_date" "Получаем дату образа"
+  log $FUNCNAME "Получаем дату образа"
   local image_date="$(date -d "$(docker image inspect $IMAGE_NAME | grep LastTagTime | awk -F ' ' '{gsub(/"/,"",$2); print $2}')" +%FT%T)"
-  log "is_image_up_to_date" "Дата образа   : '$image_date'"
-  log "is_image_up_to_date" "Получаем дату jar-файла"
+  log $FUNCNAME "Дата образа   : '$image_date'"
+  log $FUNCNAME "Получаем дату jar-файла"
   local jar_date="$(date -d "$(stat -c %y $PROJECT_FOLDER/target/$JAR_FILE)" +%FT%T)"
-  log "is_image_up_to_date" "Дата jar файла: '$jar_date'"
-  log "is_image_up_to_date" "Сравниваем даты"
+  log $FUNCNAME "Дата jar файла: '$jar_date'"
+  log $FUNCNAME "Сравниваем даты"
   if [[ "$image_date" < "$jar_date" ]]; then
-    log "is_image_up_to_date" "Образ '$IMAGE_NAME' устарел"
+    log $FUNCNAME "Образ '$IMAGE_NAME' устарел"
     return 1
   else
-    log "is_image_up_to_date" "Образ свежий"
+    log $FUNCNAME "Образ свежий"
     return 0
   fi
 }
 
 function run_container () {
-  log "run_container" "Установливаем обработчик ошибок"
+  log $FUNCNAME "Установливаем обработчик ошибок"
   trap 'log "run_container" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
-  # Получить опцию для запуска контейнера
+  log $FUNCNAME "Получаем опцию для запуска контейнера"
   local option="$1"
-  log "run_container" "Запускаем контейнер с опцией $option"
+  log $FUNCNAME "Запускаем контейнер с опцией $option"
   docker compose --env-file "$ENV_FILE" up "$option" -d
 }
 
 function if_old_rebuild_container () {
-  log "if_old_rebuild_container" "Проверяем, является ли образ свежим"
+  log $FUNCNAME "Проверяем, является ли образ свежим"
   if is_image_fresh; then
-    log "if_old_rebuild_container" "Образ свежий. Запускаем контейнер"
+    log $FUNCNAME "Образ свежий. Запускаем контейнер"
     docker compose --env-file "$ENV_FILE" up -d
   else
-    log "if_old_rebuild_container" "Образ устарел. Пересобираем и запускаем контейнер"
+    log $FUNCNAME "Образ устарел. Пересобираем и запускаем контейнер"
     rebuild_and_run_containers
   fi
 }
 
-
-
 function build_and_run_containers () {
-  log "build_and_run_containers" "Переходим в папку развертывания: '$DEPLOYMENT_FOLDER'"
-  cd "$DEPLOYMENT_FOLDER"
-  log "build_and_run_containers" "Начинаем сборку и запуск контейнеров. Проверяем есть ли образ '$IMAGE_NAME'"
-  if [[ -z $(docker image inspect $IMAGE_NAME) ]]; then
-    log "build_and_run_containers" "Образа '$IMAGE_NAME' не существует"
+  log $FUNCNAME "Установливаем обработчик ошибок"
+  trap 'log "build_and_run_containers" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
+  # Получить путь к папке развертывания
+  local deployment_folder="$DEPLOYMENT_FOLDER"
+  log $FUNCNAME "Переходим в папку развертывания: '${deployment_folder}'"
+  # Сохранить текущую папку в стеке и перейти в папку развертывания
+  pushd "${deployment_folder}"
+  log $FUNCNAME "Начинаем сборку и запуск контейнеров. Проверяем есть ли образ '${IMAGE_NAME}'"
+  if [[ -z $(docker image inspect ${IMAGE_NAME}) ]]; then
+    log $FUNCNAME "Образа '${IMAGE_NAME}' не существует"
     rebuild_and_run_containers
   else
-    log "build_and_run_containers" "Образ '$IMAGE_NAME' существует. Проверяем, является ли он свежим"
-    if_old_rebuild_container
+    log $FUNCNAME "Образ '${IMAGE_NAME}' существует. Проверяем, является ли он свежим"
+    if is_image_up_to_date; then
+      log $FUNCNAME "Образ свежий. Запускаем контейнер"
+      run_container --no-deps
+    else
+      log $FUNCNAME "Образ устарел. Пересобираем и запускаем контейнер"
+      rebuild_and_run_containers
+    fi
   fi
-  log "build_and_run_containers" "Закончили сборку и запуск контейнеров"
+  # Вернуться в предыдущую папку из стека
+  popd
+  log $FUNCNAME "Закончили сборку и запуск контейнеров"
 }
 
 build_jar_file
