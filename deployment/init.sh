@@ -42,11 +42,12 @@ function get_jar_file () {
   printf '%s\n' "${jar_file}"
 }
 
-DOCKER_FILE="docker-compose.yaml"
+DOCKER_COMPOSE_NAME="docker-compose.yaml"
 IMAGE_NAME="deployment-ip-scanner"
 SCRIPT_PATH="$(get_script_abs_path)"
 PROJECT_FOLDER="$(dirname "${SCRIPT_PATH}")"
 DEPLOYMENT_FOLDER="${PROJECT_FOLDER}/deployment"
+DOCKER_COMPOSE_FILE="${DEPLOYMENT_FOLDER}/${DOCKER_COMPOSE_NAME}"
 ENV_FILE="${DEPLOYMENT_FOLDER}/.env"
 TARGET_FOLDER="${PROJECT_FOLDER}/target"
 JAR_FILE="${TARGET_FOLDER}/$(get_jar_file)"
@@ -54,11 +55,12 @@ SRC_FOLDER="${PROJECT_FOLDER}/src"
 IMAGE_FILE="${DEPLOYMENT_FOLDER}/${IMAGE_NAME}"
 
 log "SCRIPT_NAME=${SCRIPT_NAME}"
-log "DOCKER_FILE=${DOCKER_FILE}"
+log "DOCKER_COMPOSE_NAME=${DOCKER_COMPOSE_NAME}"
 log "IMAGE_NAME=${IMAGE_NAME}"
 log "SCRIPT_PATH=${SCRIPT_PATH}"
 log "PROJECT_FOLDER=${PROJECT_FOLDER}"
 log "DEPLOYMENT_FOLDER=${DEPLOYMENT_FOLDER}"
+log "DOCKER_COMPOSE_FILE=${DOCKER_COMPOSE_FILE}"
 log "ENV_FILE=${ENV_FILE}"
 log "TARGET_FOLDER=${TARGET_FOLDER}"
 log "JAR_FILE=${JAR_FILE}"
@@ -104,12 +106,12 @@ function rebuild_jar_file_if_needed () {
 function run_container () {
   local option="$1"
   log "Запускаем контейнер с опцией ${option}"
-  docker compose --env-file "${ENV_FILE}" up ${option} -d
+  docker compose --file ${DOCKER_COMPOSE_FILE} --env-file "${ENV_FILE}" up ${option} -d
 }
 
 function rebuild_and_run_containers () {
   log "Собираем образ"
-  docker compose --env-file "${ENV_FILE}" build
+  docker compose --file ${DOCKER_COMPOSE_FILE} --env-file "${ENV_FILE}" build
   log "Запускаем контейнер"
   run_container --force-recreate --no-deps
 }
@@ -133,14 +135,14 @@ function run_container () {
   log "Получаем опцию для запуска контейнера"
   local option="$1"
   log "Запускаем контейнер с опцией ${option}"
-  docker compose --env-file "${ENV_FILE}" up "${option}" -d
+  docker compose --file ${DOCKER_COMPOSE_FILE} --env-file "${ENV_FILE}" up "${option}" --detach
 }
 
 function if_old_rebuild_container () {
   log "Проверяем, является ли образ свежим"
   if is_image_up_to_date; then
     log "Образ свежий. Запускаем контейнер"
-    docker compose --env-file "${ENV_FILE}" up -d
+    docker compose --file ${DOCKER_COMPOSE_FILE} --env-file "${ENV_FILE}" up --detach
   else
     log "Образ устарел. Пересобираем и запускаем контейнер"
     rebuild_and_run_containers
