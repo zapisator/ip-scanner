@@ -8,21 +8,12 @@ set -euo pipefail
 
 SCRIPT_NAME="$0"
 
-# Определить функцию для вывода отладочной информации
-function caller_function_name() {
-    local -r function_name="${FUNCNAME[2]}"
-    printf $function_name
-}
-
 function log () {
   local -r timestamp=$(date +"%Y-%m-%dT%H:%M:%S.%3N")
   local -r script_name=$(basename "$0")
-  # Получить имя функции, из которой вызывается лог
-  local -r function_name=$(caller_function_name)
-  # Получить сообщение, которое нужно вывести
+  local -r caller_function_name="${FUNCNAME[1]}"
   local -r message="$1"
-  # Вывести сообщение с датой, временем и именем функции
-  printf "%s: [%s # %s] %s\n" "$timestamp" "$script_name" "$function_name" "$message" >&2
+  printf "%s: [%s # %s] %s\n" "$timestamp" "$script_name" "$caller_function_name" "$message" >&2
 }
 
 # Функция, которая получает абсолютный путь к скрипту и устанавливает его в переменную окружения
