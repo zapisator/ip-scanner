@@ -13,7 +13,7 @@ function log () {
   local -r script_name=$(basename "$0")
   local -r caller_function_name="${FUNCNAME[1]}"
   local -r message="$1"
-  printf "%s: [%s # %s] %s\n" "$timestamp" "$script_name" "$caller_function_name" "$message" >&2
+  printf "%s: [%s # %s] %s\n" "${timestamp}" "${script_name}" "${caller_function_name}" "${message}" >&2
 }
 
 function get_script_abs_path () {
@@ -30,21 +30,17 @@ function get_script_abs_path () {
    printf '%s\n' "${script_path}"
  }
 
-# Функция, которая получает значение JAR_FILE из docker-compose.yml и устанавливает его в переменную окружения
-
-get_jar_file () {
+function get_jar_file () {
   log "Получаем от docker compose значение переменной окружения JAR_FILE"
   local jar_file=$(docker compose --env-file "${ENV_FILE}" config | grep -m 1 JAR_FILE | awk -F ': ' '{print $2}')
-  log "Значение JAR_FILE: $jar_file. Проверяем, что значение не пустое"
-  if [[ -z "$jar_file" ]]; then
+  log "Значение JAR_FILE: ${jar_file}. Проверяем, что значение не пустое"
+  if [[ -z "${jar_file}" ]]; then
     log "Не удалось найти переменную JAR_FILE в файле docker-compose.yml"
     return 1
   fi
-  log "JAR_FILE существует. Возращаем его значение: $jar_file"
-  printf '%s\n' "$jar_file"
+  log "JAR_FILE существует. Возращаем его значение: ${jar_file}"
+  printf '%s\n' "${jar_file}"
 }
-
-# Получить путь к скрипту и становить переменные для папок проекта и развертывания и для названий файлов и папок
 
 DOCKER_FILE="docker-compose.yaml"
 IMAGE_NAME="deployment-ip-scanner"
@@ -56,8 +52,6 @@ TARGET_FOLDER="${PROJECT_FOLDER}/target"
 JAR_FILE="${TARGET_FOLDER}/$(get_jar_file)"
 SRC_FOLDER="${PROJECT_FOLDER}/src"
 IMAGE_FILE="${DEPLOYMENT_FOLDER}/${IMAGE_NAME}"
-
-# Вывести значения переменных
 
 log "SCRIPT_NAME=${SCRIPT_NAME}"
 log "DOCKER_FILE=${DOCKER_FILE}"
@@ -123,10 +117,10 @@ function rebuild_and_run_containers () {
 function is_image_up_to_date () {
   log "Получаем дату образа"
   local image_date="$(date -d "$(docker image inspect ${IMAGE_NAME} | grep LastTagTime | awk -F ' ' '{gsub(/"/,"",$2); print $2}')" +%FT%T)"
-  log "Дата образа   : '$image_date'. Получаем дату jar-файла"
+  log "Дата образа   : '${image_date}'. Получаем дату jar-файла"
   local jar_date="$(date -d "$(stat -c %y ${JAR_FILE})" +%FT%T)"
-  log "Дата jar файла: '$jar_date'. Сравниваем даты"
-  if [[ "$image_date" < "$jar_date" ]]; then
+  log "Дата jar файла: '${jar_date}'. Сравниваем даты"
+  if [[ "${image_date}" < "${jar_date}" ]]; then
     log "Образ '${IMAGE_NAME}' устарел"
     return 1
   else
@@ -138,8 +132,8 @@ function is_image_up_to_date () {
 function run_container () {
   log "Получаем опцию для запуска контейнера"
   local option="$1"
-  log "Запускаем контейнер с опцией $option"
-  docker compose --env-file "${ENV_FILE}" up "$option" -d
+  log "Запускаем контейнер с опцией ${option}"
+  docker compose --env-file "${ENV_FILE}" up "${option}" -d
 }
 
 function if_old_rebuild_container () {
