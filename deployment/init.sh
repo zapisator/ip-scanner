@@ -16,7 +16,7 @@ function log () {
   printf "%s: [%s # %s] %s\n" "$timestamp" "$script_name" "$caller_function_name" "$message" >&2
 }
 
-йfunction get_script_abs_path () {
+function get_script_abs_path () {
    log "Получаем относительный путь к скрипту"
    local script_path="$(dirname -- "${SCRIPT_NAME}")"
    log "Относительный путь к скрипту: ${script_path} преобразовываем в абсолютный путь"
