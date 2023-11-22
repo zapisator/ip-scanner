@@ -16,18 +16,12 @@ function log () {
   printf "%s: [%s # %s] %s\n" "$timestamp" "$script_name" "$caller_function_name" "$message" >&2
 }
 
-# Функция, которая получает абсолютный путь к скрипту и устанавливает его в переменную окружения
-
-
-
-function get_script_path () {
+йfunction get_script_abs_path () {
    log "Получаем относительный путь к скрипту"
    local script_path="$(dirname -- "${SCRIPT_NAME}")"
-   log "Относительный путь к скрипту: ${script_path}"
-   log "Преобразовать его в абсолютный путь"
+   log "Относительный путь к скрипту: ${script_path} преобразовываем в абсолютный путь"
    script_path="$(cd -- "${script_path}" && pwd)"
-   log "Абсолютный путь к скрипту: ${script_path}"
-   log "Проверяем, что путь доступен"
+   log "Абсолютный путь к скрипту: ${script_path}. Проверяем, что путь доступен"
    if [[ -z "${script_path}" ]] ; then
      log "Ошибка: не удалось получить путь к скрипту"
      return 1
@@ -36,81 +30,76 @@ function get_script_path () {
    printf '%s\n' "${script_path}"
  }
 
-
 # Функция, которая получает значение JAR_FILE из docker-compose.yml и устанавливает его в переменную окружения
 
 get_jar_file () {
   log "Получаем от docker compose значение переменной окружения JAR_FILE"
-  local jar_file=$(docker compose --env-file "$ENV_FILE" config | grep -m 1 JAR_FILE | awk -F ': ' '{print $2}')
-  log "Значение JAR_FILE: "$jar_file
-  log "Проверяем, что значение не пустое: "$jar_file
+  local jar_file=$(docker compose --env-file "${ENV_FILE}" config | grep -m 1 JAR_FILE | awk -F ': ' '{print $2}')
+  log "Значение JAR_FILE: $jar_file. Проверяем, что значение не пустое"
   if [[ -z "$jar_file" ]]; then
     log "Не удалось найти переменную JAR_FILE в файле docker-compose.yml"
     return 1
   fi
-  log "JAR_FILE существует. Возращаем его значение: "$jar_file
+  log "JAR_FILE существует. Возращаем его значение: $jar_file"
   printf '%s\n' "$jar_file"
 }
 
 # Получить путь к скрипту и становить переменные для папок проекта и развертывания и для названий файлов и папок
 
-SCRIPT_PATH=$(get_script_path)
-PROJECT_FOLDER="$(dirname "$SCRIPT_PATH")"
-DEPLOYMENT_FOLDER=$PROJECT_FOLDER/"deployment"
-IMAGE_NAME="deployment-ip-scanner"
-ENV_FILE="$DEPLOYMENT_FOLDER/.env"
-JAR_FILE=$(get_jar_file)
 DOCKER_FILE="docker-compose.yaml"
+IMAGE_NAME="deployment-ip-scanner"
+SCRIPT_PATH="$(get_script_abs_path)"
+PROJECT_FOLDER="$(dirname "${SCRIPT_PATH}")"
+DEPLOYMENT_FOLDER="${PROJECT_FOLDER}/deployment"
+ENV_FILE="${DEPLOYMENT_FOLDER}/.env"
+TARGET_FOLDER="${PROJECT_FOLDER}/target"
+JAR_FILE="${TARGET_FOLDER}/$(get_jar_file)"
+SRC_FOLDER="${PROJECT_FOLDER}/src"
+IMAGE_FILE="${DEPLOYMENT_FOLDER}/${IMAGE_NAME}"
 
 # Вывести значения переменных
 
-log "" "SCRIPT_NAME="$SCRIPT_NAME
-log "" "SCRIPT_PATH="$SCRIPT_PATH
-log "" "PROJECT_FOLDER="$PROJECT_FOLDER
-log "" "DEPLOYMENT_FOLDER="$DEPLOYMENT_FOLDER
-log "" "JAR_FILE="$JAR_FILE
-log "" "DOCKER_FILE="$DOCKER_FILE
-log "" "ENV_FILE="$ENV_FILE
+log "SCRIPT_NAME=${SCRIPT_NAME}"
+log "DOCKER_FILE=${DOCKER_FILE}"
+log "IMAGE_NAME=${IMAGE_NAME}"
+log "SCRIPT_PATH=${SCRIPT_PATH}"
+log "PROJECT_FOLDER=${PROJECT_FOLDER}"
+log "DEPLOYMENT_FOLDER=${DEPLOYMENT_FOLDER}"
+log "ENV_FILE=${ENV_FILE}"
+log "TARGET_FOLDER=${TARGET_FOLDER}"
+log "JAR_FILE=${JAR_FILE}"
+log "SRC_FOLDER=${SRC_FOLDER}"
+log "IMAGE_FILE=${IMAGE_FILE}"
 
-# Определить функцию для сборки jar-файла, если он отсутствует или устарел
+cd ${PROJECT_FOLDER}
 
 function build_jar_file () {
-  log "Получаем путь к папке проекта"
-  local project_folder="$PROJECT_FOLDER"
-  log "Сохраняем текущую папку в стеке и переходим в папку проекта '${project_folder}'"
-  pushd "${project_folder}"
-  log "Начинаем сборку jar-файла 'target/${JAR_FILE}'. Проверяем есть ли этот файл"
-  if [[ -f target/${JAR_FILE} ]]; then
+  log "Начинаем сборку jar-файла '${JAR_FILE}'. Проверяем есть ли этот файл"
+  if [[ -f ${JAR_FILE} ]]; then
     log "jar-файл существует, проверяем были ли его изменения"
     rebuild_jar_file_if_needed
   else
     log "jar-файла не существует. Нужно построить новый."
     build_new_jar_file
   fi
-  log "Возращаемся в предыдущую папку из стека"
-  popd
   log "Закончили сборку jar-файла"
 }
 
 function build_new_jar_file () {
   log "Файла не было. Собираем jar-файл заново с ./mvnw package --quiet"
-  local result
-  result=$(./mvnw package --quiet) || { log "Сборка неуспешна" >&2; exit 1; }
+  ./mvnw package --quiet || { log "Сборка неуспешна" >&2; exit 1; }
   log "Сборка успешна"
 }
 
 function remove_jar_file() {
-  log "Получаем название jar-файла"
-  local jar_file="$JAR_FILE"
-  log "Удаляем старый jar-файл"
-  rm target/"$jar_file"
+  log "Удаляем старый jar-файл: ${JAR_FILE}"
+  rm "${JAR_FILE}"
 }
 
 function rebuild_jar_file_if_needed () {
-  log "Получаем название jar-файла"
-  local jar_file="$JAR_FILE"
-  if find src -newer target/"$jar_file" | grep -q .; then
-    log "Он 'target/$jar_file' существует и были изменения исходного кода. Удаляем старый jar-файл"
+  log "Проверяем старше ли файлы в папке src '${SRC_FOLDER}', чем файл jar '${JAR_FILE}'"
+  if find "${SRC_FOLDER}" -newer "${JAR_FILE}" | grep -q .; then
+    log "Он '${JAR_FILE}' существует и были изменения исходного кода. Удаляем старый jar-файл"
     remove_jar_file
     build_new_jar_file
   else
@@ -125,24 +114,20 @@ function run_container () {
 }
 
 function rebuild_and_run_containers () {
-  log "Получаем имя файла с переменными окружения"
-  local env_file="$ENV_FILE"
   log "Собираем образ"
-  docker compose --env-file "$env_file" build
+  docker compose --env-file "${ENV_FILE}" build
   log "Запускаем контейнер"
   run_container --force-recreate --no-deps
 }
 
 function is_image_up_to_date () {
   log "Получаем дату образа"
-  local image_date="$(date -d "$(docker image inspect $IMAGE_NAME | grep LastTagTime | awk -F ' ' '{gsub(/"/,"",$2); print $2}')" +%FT%T)"
-  log "Дата образа   : '$image_date'"
-  log "Получаем дату jar-файла"
-  local jar_date="$(date -d "$(stat -c %y $PROJECT_FOLDER/target/$JAR_FILE)" +%FT%T)"
-  log "Дата jar файла: '$jar_date'"
-  log "Сравниваем даты"
+  local image_date="$(date -d "$(docker image inspect ${IMAGE_NAME} | grep LastTagTime | awk -F ' ' '{gsub(/"/,"",$2); print $2}')" +%FT%T)"
+  log "Дата образа   : '$image_date'. Получаем дату jar-файла"
+  local jar_date="$(date -d "$(stat -c %y ${JAR_FILE})" +%FT%T)"
+  log "Дата jar файла: '$jar_date'. Сравниваем даты"
   if [[ "$image_date" < "$jar_date" ]]; then
-    log "Образ '$IMAGE_NAME' устарел"
+    log "Образ '${IMAGE_NAME}' устарел"
     return 1
   else
     log "Образ свежий"
@@ -154,14 +139,14 @@ function run_container () {
   log "Получаем опцию для запуска контейнера"
   local option="$1"
   log "Запускаем контейнер с опцией $option"
-  docker compose --env-file "$ENV_FILE" up "$option" -d
+  docker compose --env-file "${ENV_FILE}" up "$option" -d
 }
 
 function if_old_rebuild_container () {
   log "Проверяем, является ли образ свежим"
   if is_image_up_to_date; then
     log "Образ свежий. Запускаем контейнер"
-    docker compose --env-file "$ENV_FILE" up -d
+    docker compose --env-file "${ENV_FILE}" up -d
   else
     log "Образ устарел. Пересобираем и запускаем контейнер"
     rebuild_and_run_containers
@@ -169,10 +154,6 @@ function if_old_rebuild_container () {
 }
 
 function build_and_run_containers () {
-  log "Получаем путь к папке развертывания"
-  local deployment_folder="$DEPLOYMENT_FOLDER"
-  log "Сохраняем текущую папку в стеке и переходим в папку развертывания: '${deployment_folder}'"
-  pushd "${deployment_folder}"
   log "Начинаем сборку и запуск контейнеров. Проверяем есть ли образ '${IMAGE_NAME}'"
   if [[ -z $(docker image inspect ${IMAGE_NAME}) ]]; then
     log "Образа '${IMAGE_NAME}' не существует"
@@ -187,13 +168,11 @@ function build_and_run_containers () {
       rebuild_and_run_containers
     fi
   fi
-  log "Возращаемся в предыдущую папку из стека"
-  popd
   log "Закончили сборку и запуск контейнеров"
 }
 
 build_jar_file
-#build_and_run_containers
+build_and_run_containers
 
 # Добавить комментарии к скрипту
 # Этот скрипт предназначен для автоматизации сборки и запуска проекта ip-scanner
