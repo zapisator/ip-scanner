@@ -1,20 +1,11 @@
 #!/usr/bin/env bash
+source util/log.sh
 
 # Установить опции для выхода при ошибке, необъявленной переменной или ошибке в конвейере
 
 set -euo pipefail
 
-# Установить переменные для имени скрипта
-
 SCRIPT_NAME="$0"
-
-function log () {
-  local -r timestamp=$(date +"%Y-%m-%dT%H:%M:%S.%3N")
-  local -r script_name=$(basename "$0")
-  local -r caller_function_name="${FUNCNAME[1]}"
-  local -r message="$1"
-  printf "%s: [%s # %s] %s\n" "${timestamp}" "${script_name}" "${caller_function_name}" "${message}" >&2
-}
 
 function get_script_abs_path () {
    log "Получаем относительный путь к скрипту"
