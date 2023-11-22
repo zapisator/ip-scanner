@@ -63,8 +63,7 @@ function build_jar_file () {
   trap 'log "build_jar_file" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
   log $FUNCNAME "Получаем путь к папке проекта"
   local project_folder="$PROJECT_FOLDER"
-  log $FUNCNAME "Переходим в папку проекта '${project_folder}'"
-  # Сохранить текущую папку в стеке и перейти в папку проекта
+  log $FUNCNAME "Сохраняем текущую папку в стеке и переходим в папку проекта '${project_folder}'"
   pushd "${project_folder}"
   log $FUNCNAME "Начинаем сборку jar-файла 'target/${JAR_FILE}'. Проверяем есть ли этот файл"
   if [[ -f target/${JAR_FILE} ]]; then
@@ -74,9 +73,9 @@ function build_jar_file () {
     log $FUNCNAME "jar-файла не существует. Нужно построить новый."
     build_new_jar_file
   fi
-  log $FUNCNAME "Закончили сборку jar-файла"
-  # Вернуться в предыдущую папку из стека
+  log $FUNCNAME "Возращаемся в предыдущую папку из стека"
   popd
+  log $FUNCNAME "Закончили сборку jar-файла"
 }
 function build_new_jar_file () {
   log $FUNCNAME "Файла не было. Собираем jar-файл заново с ./mvnw package --quiet"
@@ -168,10 +167,9 @@ function if_old_rebuild_container () {
 function build_and_run_containers () {
   log $FUNCNAME "Установливаем обработчик ошибок"
   trap 'log "build_and_run_containers" "Произошла ошибка, выходим из скрипта"; exit 1' ERR
-  # Получить путь к папке развертывания
+  log $FUNCNAME "Получаем путь к папке развертывания"
   local deployment_folder="$DEPLOYMENT_FOLDER"
-  log $FUNCNAME "Переходим в папку развертывания: '${deployment_folder}'"
-  # Сохранить текущую папку в стеке и перейти в папку развертывания
+  log $FUNCNAME "Сохраняем текущую папку в стеке и переходим в папку развертывания: '${deployment_folder}'"
   pushd "${deployment_folder}"
   log $FUNCNAME "Начинаем сборку и запуск контейнеров. Проверяем есть ли образ '${IMAGE_NAME}'"
   if [[ -z $(docker image inspect ${IMAGE_NAME}) ]]; then
@@ -187,7 +185,7 @@ function build_and_run_containers () {
       rebuild_and_run_containers
     fi
   fi
-  # Вернуться в предыдущую папку из стека
+  log $FUNCNAME "Возращаемся в предыдущую папку из стека"
   popd
   log $FUNCNAME "Закончили сборку и запуск контейнеров"
 }
